@@ -6,7 +6,11 @@ import androidx.appcompat.app.AppCompatActivity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.util.Log;
 import android.view.View;
+import android.view.animation.Animation;
+import android.view.animation.LinearInterpolator;
+import android.view.animation.RotateAnimation;
 import android.widget.Button;
 import android.widget.ImageView;
 
@@ -66,7 +70,14 @@ public class MainActivity extends AppCompatActivity {
         };
     }
 
+    @Override
+    protected void onStart() {
+        super.onStart();
+        Log.d("Result", "Left=" +diceImage.getLeft() + " Top=" + diceImage.getTop());
+    }
+
     public void rotate(View view) throws InterruptedException {
+        Log.d("Result", "Left=" +diceImage.getLeft() + " Top=" + diceImage.getTop());
         Thread childThread = new Thread() {
             @Override
             public void run() {
@@ -121,6 +132,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshImages() {
+//        RotateAnimation rotate = new RotateAnimation(0, 180, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
+//        rotate.setDuration(5000);
+//        rotate.setInterpolator(new LinearInterpolator());
         diceImage.setImageResource(diceResIds[resultResId]);
         diceImage2.setImageResource(diceResIds[resultResId2]);
     }
