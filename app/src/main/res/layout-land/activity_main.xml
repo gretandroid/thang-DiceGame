@@ -39,6 +39,6 @@
         android:layout_height="wrap_content"
         android:layout_gravity="center_horizontal"
         android:layout_marginTop="50dp"
-        android:onClick="rotate"
+        android:onClick="doRotate"
         android:text="Rotate" />
 </LinearLayout>

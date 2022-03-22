@@ -27,11 +27,12 @@ public class MainActivity extends AppCompatActivity {
     private static final int ROTATE_START = 1;
     private static final int ROTATE_IN_PROGRESS = 2;
     private static final int ROTATE_END = 3;
+    public static final String SEPARATOR = "_";
     private List<ImageView> diceImages = new ArrayList<>();
     private int[] diceResIds;
     Handler rotateHandler;
     private Button rotateButton;
-
+    private int orientation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,6 +69,20 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         };
+
+        // Restore state
+        orientation = getResources().getConfiguration().orientation;
+        if (savedInstanceState != null) {
+            diceImages.forEach(dice -> {
+                int resId = savedInstanceState.getInt(buildDiceStateKey(orientation, dice));
+                if (resId != 0) {
+                    dice.setImageResource(resId);
+                    dice.setTag(resId);
+                }
+            });
+        }
+
+        Log.d("MainActivity", "onCreate");
     }
 
     private void initDiceImages() {
@@ -79,11 +94,29 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @Override
+    protected void onSaveInstanceState(@NonNull Bundle outState) {
+        super.onSaveInstanceState(outState);
+        diceImages.forEach(dice -> {
+            Integer resId = (Integer) dice.getTag();
+            if (resId != null) {
+                outState.putInt(buildDiceStateKey(orientation, dice), resId);
+            }
+
+        });
+        Log.d("MainActivity", "onSaveInstanceState");
+    }
+
+    @NonNull
+    private String buildDiceStateKey(int orientation, ImageView dice) {
+        return String.valueOf(orientation) + SEPARATOR + String.valueOf(dice.getId());
+    }
+
+    @Override
     protected void onStart() {
         super.onStart();
     }
 
-    public void rotate(View view) throws InterruptedException {
+    public void doRotate(View view) throws InterruptedException {
         Thread childThread = new Thread() {
             @Override
             public void run() {
@@ -99,7 +132,7 @@ public class MainActivity extends AppCompatActivity {
                     executorService.submit(new Runnable() {
                         @Override
                         public void run() {
-                            rotate(dice);
+                            doRotate(dice);
                         }
                     });
                 }
@@ -109,6 +142,7 @@ public class MainActivity extends AppCompatActivity {
                 } catch (InterruptedException e) {
                     e.printStackTrace();
                 }
+
                 // END
                 Message endMsg = new Message();
                 endMsg.what = ROTATE_END;
@@ -120,7 +154,7 @@ public class MainActivity extends AppCompatActivity {
 
     }
 
-    private void rotate(ImageView dice) {
+    private void doRotate(ImageView dice) {
         Random randomRotateCycle = new Random(System.currentTimeMillis());
         int numberCycle = ThreadLocalRandom.current().nextInt(MAX_CYCLE - MIN_CYCLE + 1) + MIN_CYCLE;
         Random random = new Random(System.currentTimeMillis());
@@ -153,9 +187,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void refreshDice(ImageView dice, int resultResId) {
-//        RotateAnimation rotate = new RotateAnimation(0, 180, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
-//        rotate.setDuration(5000);
-//        rotate.setInterpolator(new LinearInterpolator());
         dice.setImageResource(diceResIds[resultResId]);
+        dice.setTag(diceResIds[resultResId]);
     }
 }
