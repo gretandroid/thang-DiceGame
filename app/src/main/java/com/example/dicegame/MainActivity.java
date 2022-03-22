@@ -8,13 +8,17 @@ import android.os.Handler;
 import android.os.Message;
 import android.util.Log;
 import android.view.View;
-import android.view.animation.Animation;
-import android.view.animation.LinearInterpolator;
-import android.view.animation.RotateAnimation;
 import android.widget.Button;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.TimeUnit;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -23,12 +27,9 @@ public class MainActivity extends AppCompatActivity {
     private static final int ROTATE_START = 1;
     private static final int ROTATE_IN_PROGRESS = 2;
     private static final int ROTATE_END = 3;
-    private ImageView diceImage;
-    private ImageView diceImage2;
+    private List<ImageView> diceImages = new ArrayList<>();
     private int[] diceResIds;
     Handler rotateHandler;
-    int resultResId;
-    int resultResId2;
     private Button rotateButton;
 
 
@@ -36,8 +37,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        diceImage = findViewById(R.id.diceImage);
-        diceImage2 = findViewById(R.id.diceImage2);
+        initDiceImages();
         rotateButton = findViewById(R.id.rotateButton);
 
         // init models dices
@@ -61,7 +61,7 @@ public class MainActivity extends AppCompatActivity {
                     refreshRotateButtonToRotating();
                 }
                 if (msg.what == ROTATE_IN_PROGRESS) {
-                    refreshImages();
+                    refreshDice(((ImageView) msg.obj), msg.arg1);
                 }
                 if (msg.what == ROTATE_END) {
                     refreshRotateButtonToRotate();
@@ -70,14 +70,20 @@ public class MainActivity extends AppCompatActivity {
         };
     }
 
+    private void initDiceImages() {
+        LinearLayout diceGroupLayout = findViewById(R.id.diceGroupLayout);
+        int numberDice = diceGroupLayout.getChildCount();
+        for (int i = 0; i < numberDice; i++) {
+            diceImages.add((ImageView) diceGroupLayout.getChildAt(i));
+        }
+    }
+
     @Override
     protected void onStart() {
         super.onStart();
-        Log.d("Result", "Left=" +diceImage.getLeft() + " Top=" + diceImage.getTop());
     }
 
     public void rotate(View view) throws InterruptedException {
-        Log.d("Result", "Left=" +diceImage.getLeft() + " Top=" + diceImage.getTop());
         Thread childThread = new Thread() {
             @Override
             public void run() {
@@ -87,29 +93,22 @@ public class MainActivity extends AppCompatActivity {
                 rotateHandler.sendMessage(beginMsg);
 
                 // ROTATING
-                Random randomRotateCycle = new Random(System.currentTimeMillis());
-                Random randomRotateCycle2 = new Random(System.currentTimeMillis() * 2);
-                int numberCycle = randomRotateCycle.nextInt(MAX_CYCLE - MIN_CYCLE + 1) + MIN_CYCLE;
-                int numberCycle2 = randomRotateCycle2.nextInt(MAX_CYCLE - MIN_CYCLE + 1) + MIN_CYCLE;
-                int max = java.lang.Math.max(numberCycle, numberCycle2);
-                Random random = new Random(System.currentTimeMillis());
-                Random random2 = new Random(System.currentTimeMillis() * 2);
-                int i = 1;
-                while ( i < max) {
-                    resultResId = i < numberCycle ? random.nextInt(6) : resultResId;
-                    resultResId2 = i < numberCycle2 ? random2.nextInt(6) : resultResId2;
-                    try {
-                        Thread.sleep(10 * i);
-                    } catch (InterruptedException e) {
-                        e.printStackTrace();
-                    }
-
-                    Message msg = new Message();
-                    msg.what = ROTATE_IN_PROGRESS;
-                    rotateHandler.sendMessage(msg);
-                    i++;
+                int numberDice = diceImages.size();
+                ExecutorService executorService = Executors.newFixedThreadPool(numberDice);
+                for (ImageView dice : diceImages) {
+                    executorService.submit(new Runnable() {
+                        @Override
+                        public void run() {
+                            rotate(dice);
+                        }
+                    });
                 }
-
+                executorService.shutdown();
+                try {
+                    executorService.awaitTermination(Long.MAX_VALUE, TimeUnit.NANOSECONDS);
+                } catch (InterruptedException e) {
+                    e.printStackTrace();
+                }
                 // END
                 Message endMsg = new Message();
                 endMsg.what = ROTATE_END;
@@ -119,6 +118,28 @@ public class MainActivity extends AppCompatActivity {
 
         childThread.start();
 
+    }
+
+    private void rotate(ImageView dice) {
+        Random randomRotateCycle = new Random(System.currentTimeMillis());
+        int numberCycle = ThreadLocalRandom.current().nextInt(MAX_CYCLE - MIN_CYCLE + 1) + MIN_CYCLE;
+        Random random = new Random(System.currentTimeMillis());
+        int i = 1;
+        while ( i < numberCycle) {
+            int resultResId = random.nextInt(6);
+            try {
+                Thread.sleep(10 * i);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+
+            Message msg = new Message();
+            msg.what = ROTATE_IN_PROGRESS;
+            msg.obj = dice;
+            msg.arg1 = resultResId;
+            rotateHandler.sendMessage(msg);
+            i++;
+        }
     }
 
     private void refreshRotateButtonToRotating() {
@@ -131,11 +152,10 @@ public class MainActivity extends AppCompatActivity {
         rotateButton.setEnabled(true);
     }
 
-    private void refreshImages() {
+    private void refreshDice(ImageView dice, int resultResId) {
 //        RotateAnimation rotate = new RotateAnimation(0, 180, Animation.RELATIVE_TO_SELF, 0.5f, Animation.RELATIVE_TO_SELF, 0.5f);
 //        rotate.setDuration(5000);
 //        rotate.setInterpolator(new LinearInterpolator());
-        diceImage.setImageResource(diceResIds[resultResId]);
-        diceImage2.setImageResource(diceResIds[resultResId2]);
+        dice.setImageResource(diceResIds[resultResId]);
     }
 }
