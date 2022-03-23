@@ -32,7 +32,6 @@ public class MainActivity extends AppCompatActivity {
     private int[] diceResIds;
     Handler rotateHandler;
     private Button rotateButton;
-    private int orientation;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -71,10 +70,9 @@ public class MainActivity extends AppCompatActivity {
         };
 
         // Restore state
-        orientation = getResources().getConfiguration().orientation;
         if (savedInstanceState != null) {
             diceImages.forEach(dice -> {
-                String key = buildDiceStateKey(orientation, dice);
+                String key = buildDiceStateKey(dice);
                 Log.d("MainActivity", "onCreate" + "key=" + key);
                 int resId = savedInstanceState.getInt(key);
                 if (resId != 0) {
@@ -102,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
         diceImages.forEach(dice -> {
             Integer resId = (Integer) dice.getTag();
             if (resId != null) {
-                String key = buildDiceStateKey(orientation, dice);
+                String key = buildDiceStateKey(dice);
                 outState.putInt(key, resId);
                 Log.d("MainActivity", "onSaveInstanceState" + "[key=" + key + ", value=" + resId + "]");
             }
@@ -110,8 +108,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     @NonNull
-    private String buildDiceStateKey(int orientation, ImageView dice) {
-        return String.valueOf(orientation) + SEPARATOR + String.valueOf(dice.getId());
+    private String buildDiceStateKey(ImageView dice) {
+        return String.valueOf(dice.getId());
     }
 
     @Override
