@@ -74,8 +74,11 @@ public class MainActivity extends AppCompatActivity {
         orientation = getResources().getConfiguration().orientation;
         if (savedInstanceState != null) {
             diceImages.forEach(dice -> {
-                int resId = savedInstanceState.getInt(buildDiceStateKey(orientation, dice));
+                String key = buildDiceStateKey(orientation, dice);
+                Log.d("MainActivity", "onCreate" + "key=" + key);
+                int resId = savedInstanceState.getInt(key);
                 if (resId != 0) {
+                    Log.d("MainActivity", "onCreate" + "value=" + resId);
                     dice.setImageResource(resId);
                     dice.setTag(resId);
                 }
@@ -99,11 +102,11 @@ public class MainActivity extends AppCompatActivity {
         diceImages.forEach(dice -> {
             Integer resId = (Integer) dice.getTag();
             if (resId != null) {
-                outState.putInt(buildDiceStateKey(orientation, dice), resId);
+                String key = buildDiceStateKey(orientation, dice);
+                outState.putInt(key, resId);
+                Log.d("MainActivity", "onSaveInstanceState" + "[key=" + key + ", value=" + resId + "]");
             }
-
         });
-        Log.d("MainActivity", "onSaveInstanceState");
     }
 
     @NonNull
